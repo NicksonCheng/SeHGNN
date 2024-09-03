@@ -1,0 +1,12 @@
+Label Rate 20%
+Epoch: 183
+Loss: 1.2241
+ACC: 0.7406, Micro-F1: 0.4610, Macro-F1: 0.4316
+Label Rate 40%
+Epoch: 199
+Loss: 1.0093
+ACC: 0.8529, Micro-F1: 0.6030, Macro-F1: 0.5722
+Label Rate 60%
+Epoch: 199
+Loss: 0.9766
+ACC: 0.8643, Micro-F1: 0.6270, Macro-F1: 0.6009

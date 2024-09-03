@@ -1,0 +1,6 @@
+Label Rate 20 Epoch: 199 Loss: 0.4295
+ACC: 0.9735, Micro-F1: 0.8906, Macro-F1: 0.8939 NMI: 0.6448 ARI: 0.6905
+Label Rate 40 Epoch: 199 Loss: 0.4234
+ACC: 0.9758, Micro-F1: 0.9010, Macro-F1: 0.9027 NMI: 0.6686 ARI: 0.7178
+Label Rate 60 Epoch: 102 Loss: 0.4243
+ACC: 0.9748, Micro-F1: 0.8990, Macro-F1: 0.9007 NMI: 0.6628 ARI: 0.7110

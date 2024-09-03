@@ -1,0 +1,2 @@
+ Epoch: 91 Loss: 2.1830
+ACC: 0.5094, Micro-F1: 0.1455, Macro-F1: 0.1249 NMI: 0.2577 ARI: 0.0008

@@ -1,7 +1,8 @@
+
 __pycache__/
 output/
 Freebase_adjs/
-
+data/PubMed/
 data/ACM.mat
 data/ACM/
 data/DBLP/
@@ -40,7 +41,7 @@ data/ogbn_proteins
 data/ogbn_arxiv
 data/ogbn_papers100M
 data/ogbn_mag
-
+data/HeCo
 # sparse_tools
 # __pycache__/
 build/
@@ -52,3 +53,4 @@ alpha/
 .coverage
 *.so
 .idea/
+.gitignore
