@@ -178,7 +178,7 @@ def main(args):
     formatted_now = datetime.datetime.now().strftime("[%Y-%m-%d_%H:%M:%S]")
 
     total_best_test = []
-    ratio_raw_predicted = []
+    ratio_raw_embeds = []
     ratio_labels = []
     for ratio in ratio_init_labels.keys():
         init_labels = ratio_init_labels[ratio]
@@ -477,6 +477,7 @@ def main(args):
                 with torch.no_grad():
                     model.eval()
                     raw_preds = []
+                    raw_embeds=[]
                     for batch, batch_feats, batch_labels_feats, batch_mask in eval_loader:
                         batch = batch.to(device)
                         batch_feats = {k: x.to(device) for k, x in batch_feats.items()}
@@ -485,9 +486,12 @@ def main(args):
                             batch_mask = {k: x.to(device) for k, x in batch_mask.items()}
                         else:
                             batch_mask = None
-                        raw_preds.append(model(batch, batch_feats, batch_labels_feats, batch_mask).cpu())
+                        preds,embeds=model(batch, batch_feats, batch_labels_feats, batch_mask)
+                        raw_preds.append(preds.cpu())
+                        raw_embeds.append(embeds.cpu())
 
                     raw_preds = torch.cat(raw_preds, dim=0)
+                    raw_embeds=torch.cat(raw_embeds,dim=0)
                     loss_train = loss_fcn(raw_preds[:trainval_point], labels[train_nid]).item()
                     loss_val = loss_fcn(raw_preds[trainval_point:valtest_point], labels[val_nid]).item()
                     loss_test = loss_fcn(raw_preds[valtest_point:labeled_num_nodes], labels[test_nid]).item()
@@ -496,10 +500,10 @@ def main(args):
                     preds = raw_preds.argmax(dim=-1)
                 else:
                     preds = (raw_preds > 0.0).int()
-                train_acc = evaluator(raw_preds[:trainval_point], labels[train_nid], preds[:trainval_point], num_classes)
-                val_acc = evaluator(raw_preds[trainval_point:valtest_point], labels[val_nid], preds[trainval_point:valtest_point], num_classes)
+                train_acc = evaluator(raw_preds[:trainval_point], labels[train_nid], preds[:trainval_point],raw_embeds[:trainval_point], num_classes)
+                val_acc = evaluator(raw_preds[trainval_point:valtest_point], labels[val_nid], preds[trainval_point:valtest_point],raw_embeds[trainval_point:valtest_point], num_classes)
                 test_acc = evaluator(
-                    raw_preds[valtest_point:labeled_num_nodes], labels[test_nid], preds[valtest_point:labeled_num_nodes], num_classes
+                    raw_preds[valtest_point:labeled_num_nodes], labels[test_nid], preds[valtest_point:labeled_num_nodes],raw_embeds[valtest_point:labeled_num_nodes], num_classes
                 )
 
                 end = time.time()
@@ -560,12 +564,12 @@ def main(args):
                     labeled_nid = torch.LongTensor(labeled_nid).to(device)
                     feats = {k: v.to(device) for k, v in feats.items()}
                     label_feats = {k: v.to(device) for k, v in label_feats.items()}
-                    raw_preds = model(labeled_nid, feats, label_feats, None).cpu()
+                    raw_preds,embeds = model(labeled_nid, feats, label_feats, None)
                     labeled_nid = labeled_nid.cpu().numpy()
                     feats = {k: v.cpu() for k, v in feats.items()}
                     label_feats = {k: v.cpu() for k, v in label_feats.items()}
                 # print(raw_preds.shape, labels.shape)
-                ratio_raw_predicted.append(raw_preds)
+                ratio_raw_embeds.append(raw_preds.cpu())
                 ratio_labels.append(labels)
 
             continue
@@ -636,7 +640,7 @@ def main(args):
                 log_file.close()
 
     if args.clus_visual:
-        emb_2d = visualization(ratio_raw_predicted, ratio_labels, f"log/{args.dataset}/{formatted_now}.png", True)
+        emb_2d = visualization(ratio_raw_embeds, ratio_labels, f"log/{args.dataset}/{formatted_now}.png", True)
     if args.dataset == "PubMed" or args.dataset == "HGB_Freebase_random_subg":
         best_test = [sum(value) / len(value) for value in zip(*total_best_test)]
         print(total_best_test)

@@ -64,7 +64,7 @@ def visualization(ratio_embs, ratio_labels, save_file, display=False):
     return ratio_embs_2d
 
 
-def evaluator(pred_score, gt, pred, num_classes, multilabel=False):
+def evaluator(pred_score, gt, pred,embeds, num_classes, multilabel=False):
     from sklearn.metrics import roc_auc_score
     from sklearn.cluster import KMeans
     from sklearn.metrics.cluster import normalized_mutual_info_score, adjusted_rand_score
@@ -74,7 +74,7 @@ def evaluator(pred_score, gt, pred, num_classes, multilabel=False):
     print(gt.shape, pred.shape)
     softmax_score = F.softmax(pred_score.to(torch.float32), dim=1).cpu().detach().numpy()
     pred_score = pred_score.to(torch.float32).cpu().detach().numpy()
-
+    embeds=embeds.to(torch.float32).cpu().detach().numpy()
     # accuracy= (pred == gt).sum().item() / len(gt)
     auc_score = roc_auc_score(
         y_true=gt.cpu().detach().numpy(),
@@ -85,7 +85,7 @@ def evaluator(pred_score, gt, pred, num_classes, multilabel=False):
     nmi_list = []
     ari_list = []
     for kmeans_random_state in range(10):
-        Y_pred = KMeans(n_clusters=num_classes, random_state=kmeans_random_state, n_init=10).fit(pred_score).predict(pred_score)
+        Y_pred = KMeans(n_clusters=num_classes, random_state=kmeans_random_state, n_init=10).fit(embeds).predict(embeds)
         nmi = normalized_mutual_info_score(gt, Y_pred)
         ari = adjusted_rand_score(gt, Y_pred)
         nmi_list.append(nmi)
@@ -258,7 +258,7 @@ def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loa
     device = labels_cuda.device
     total_loss = 0
     iter_num = 0
-    y_true, y_pred = [], []
+    y_true, y_pred,y_embeds = [], [], []
     y_pred_score = []
     for batch in train_loader:
         # batch = batch.to(device)
@@ -278,13 +278,13 @@ def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loa
         optimizer.zero_grad()
         if scalar is not None:
             with torch.cuda.amp.autocast():
-                output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
+                output_att,embeds = model(batch, batch_feats, batch_labels_feats, batch_mask)
                 loss_train = loss_fcn(output_att, batch_y)
             scalar.scale(loss_train).backward()
             scalar.step(optimizer)
             scalar.update()
         else:
-            output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
+            output_att,embeds = model(batch, batch_feats, batch_labels_feats, batch_mask)
             loss_train = loss_fcn(output_att, batch_y)
             loss_train.backward()
             optimizer.step()
@@ -295,11 +295,12 @@ def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loa
         else:
             y_pred.append(output_att.argmax(dim=-1, keepdim=True).cpu())
         y_pred_score.append(output_att)
+        y_embeds.append(embeds)
         total_loss += loss_train.item()
         iter_num += 1
     loss = total_loss / iter_num
     # print("Training", output_att.shape, torch.cat(y_true, dim=0).shape, torch.cat(y_pred, dim=0).shape)
-    acc = evaluator(torch.cat(y_pred_score, dim=0), torch.cat(y_true, dim=0), torch.cat(y_pred, dim=0), num_classes)
+    acc = evaluator(torch.cat(y_pred_score, dim=0), torch.cat(y_true, dim=0), torch.cat(y_pred, dim=0),torch.cat(y_embeds,dim=0), num_classes)
     return loss, acc
 
 

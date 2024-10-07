@@ -219,7 +219,8 @@ class SeHGNN(nn.Module):
             x = x + self.res_fc(features[self.tgt_type])
 
         if self.dataset not in ['IMDB', 'Freebase']:
-            return self.task_mlp(x)
+            logits=self.task_mlp(x)
+            return logits,x
         else:
             x = self.task_mlp[0](x)
             for i in range(1, len(self.task_mlp)-1):
